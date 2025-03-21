@@ -27,14 +27,70 @@ func main() {
 		return
 	}
 
+	db.AutoMigrate(&User{})
+
 	router := gin.Default()
 
+	//Endpoint untuk menampilkan semua pengguna
 	router.GET("/users", func(c *gin.Context) {
 		var users []User
-		db.Find(&users)
+		db.Find(&users) //Mengambil semua data dari tabel users
 		c.JSON(http.StatusOK, gin.H{"data": users})
 	})
 
-	router.Run(":3000")
+	//Endpoint untuk menampilkan pengguna berdasarkan id
+	router.GET("/users/:id", func(c *gin.Context) {
+		var user User
+		id := c.Param("id")
+		if err := db.First(&user, id).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Pengguna tidak ditemukan"})
+			return
+		}
+		
+		c.JSON(http.StatusOK, gin.H{"data": user})
+	})
+
+//Endpoint untuk menambahkan pengguna baru
+router.POST("/users", func(c *gin.Context) {
+	var user User
+	if err := c.ShouldBindJSON(&user); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+	}
+	db.Create(&user) //Menambahkan data ke database
+	c.JSON(http.StatusCreated, gin.H{"data": user})
+})
+
+//Endpoint untuk mengedit pengguna berdasarkan id
+router.PUT("/users/:id", func(c *gin.Context) {
+	var user User
+	id := c.Param("id")
+	if err := db.First(&user, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User Not Found"})
+		return
+	}
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	db.Save(&user) //Menyimpan perubahan ke database
+	c.JSON(http.StatusOK, gin.H{"data": user})
+})
+
+//Endpoint untuk menghapus pengguna berdasarkan id
+router.DELETE("/users/:id", func(c *gin.Context) {
+	var user User
+	id := c.Param("id")
+	if err := db.First(&user, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+	db.Delete(&user) //Menghapus data dari databse
+	c.JSON(http.StatusOK, gin.H{"data": "Pengguna Berhasil Dihapus"})
+})
+
+// Menjalankan server di port 3000
+router.Run(":3000")
 
 }
