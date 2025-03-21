@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -28,11 +27,14 @@ func main() {
 		return
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		var result User
-		db.First(&result)
-		response, _ := json.Marshal(result)
-		fmt.Fprintf(w, string(response))
+	router := gin.Default()
+
+	router.GET("/users", func(c *gin.Context) {
+		var users []User
+		db.Find(&users)
+		c.JSON(http.StatusOK, gin.H{"data": users})
 	})
-	http.ListenAndServe(":8080", nil)
+
+	router.Run(":3000")
+
 }
